@@ -1,11 +1,29 @@
 sudo: required
 services:
-- docker
+  - docker
 before_install:
-- curl https://sdk.cloud.google.com | bash > /dev/null;
-- source $HOME/google-cloud-sdk/path.bash.inc
-- gcloud components update kubectl
-- gcloud auth activate-service-account --key-file service-account.json
+  - curl https://sdk.cloud.google.com | bash > /dev/null;
+  - source $HOME/google-cloud-sdk/path.bash.inc
+  - gcloud components update kubectl
+  - gcloud auth activate-service-account --key-file service-account.json
+  - gcloud config set project multi-k8s-246119
+  - gcloud config set compute/zone us-central1-a
+  - gcloud container clusters get-credentials multi-cluster
+  - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - docker build -t omniasetty/react-test -f ./client/Dockerfile.dev ./client
+
+script:
+  - docker run omniasetty/react-test npm test -- --coverage
+
+deploy:
+  provider: script
+  script: bash ./deploy.sh
+  on:
+    branch: master
+
 env:
   global:
+    - SHA=$(git rev-parse HEAD)
+    - CLOUDSDK_CORE_DISABLE_PROMPTS=1
     secure: pqsEr0zZ3ThIPv6useP59N4xdNupGNk5Ukq2Hrm19Hip/HqU1Ws6RRvw3Yi9dQhUkZ61knDfu4dv0ouaGA/0qGlMawhFN8vB4O06LGwEiNjWtLJvl0aJ9rGjW5P3vIbA/H61fOc8nbnDP9O3Ibjo+5c2wg6MOEQgptyrLkdRcxUs2NO41srUYtv7lD6UysbvdaNWzSMnKfm+cPOTWwYPUSX/BB8PQX1UnOOAEjJdpZ16tuzvfDB3bijJDqPuD8zxF6jVtNpaN9URST58h95oggp083jHxkMk8lGvSw46577152HDiyetPwyehEdlaOuhf175slHtqgxbJMzSJ6GuKT2MWil/g1iYFRyaJerFPC3hVdU1oLK/l2GazQBVV4sTLOhliitZRyNDnRtsc3BpISfYksrtfSN8qwo6+22Owtyh5R55Ls2gJtd5G6e88VTamDiTXCQe6j6Vl+9lDoO9SjTMTQDTQ2wcXx41Qe5i1vNaCNbarFhsetSxEhLX1kgpaDZ62WWhISNX6rTnVRUSWo/Zg4IyLBA2zOwd4rFPQ0oo9fVdlBMjkE87dCHA4wMQMoii5a05Fbj7YpSWxi6U6duwPUOJigOH5V1JJRadadVDId3lO/M3kl5KX3NGXSi1nNFKEuo6onR2bUGBjSFRuphplNgRPK4IFRcws3is1c0=
+     
